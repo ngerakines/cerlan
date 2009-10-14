@@ -62,6 +62,7 @@ collect_commits(User, Projects) ->
 collect_commits(_, [], Dict) -> dict:to_list(Dict);
 collect_commits(User, [Project | Projects], Dict) ->
     Commits = case githubby:user_repos_commits({?LOGIN, ?TOKEN}, User#user.username, Project) of
+        {struct, [{<<"commits">>, {struct, []}}]} -> [];
         {struct, [{<<"commits">>, CommitList}]} -> CommitList;
         _ -> []
     end,
