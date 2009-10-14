@@ -64,7 +64,7 @@ handle_request("/\~" ++ RawUsername, Req) ->
                 last_month(Y, M),
                 next_month(Y, M),
                 [],
-                [{warning, "We don't know about that user but they have been added to our processing list. Check back in a bit to see their calendar and games."}]
+                [{warning, "We don't know about that user but they have been added to our processing list."}]
             ));
         [User] ->
             UserData = [X || X = {_, _, _, {Y1, M1, _}, _} <- cerlan_data:user_dates(User), Y1 == Y, M1 == M],

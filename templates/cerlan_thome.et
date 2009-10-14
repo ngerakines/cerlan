@@ -1,12 +1,15 @@
 <%@ index(Current, Longest) %>
-<% header("Calendar About Gaming: Tracking Gaming Activity") %>
-		<div class='title'>Calendar About Gaming</div>
-		<div class='subtitle'>Tracking Gaming Activity</div>
+<% header("CalendERL About Nothing: Tracking Open Source Contributions") %>
+		<div class='title'>CalendERL About Nothing</div>
+		<div class='subtitle'>Tracking Open Source Contributions</div>
 		<div id='borderedMain'>
 			<div id='content'>
 				<h1>What is this?</h1>
-				<p>The Calendar About Gaming generates a "<a href="http://lifehacker.com/software/motivation/jerry-seinfelds-productivity-secret-281626.php">Seinfeld Calendar</a>" from your public "<a href="http://rupture.com">Rupture</a>" data.</p>
-				<p><strong>Play</strong> a game: get an <strong>X</strong> for the day. Play tomorrow, and start building up your<strong>streak.</strong></p>
+				<p>The CalendERL About Nothing generates a "<a href="http://lifehacker.com/software/motivation/jerry-seinfelds-productivity-secret-281626.php">Seinfeld Calendar</a>" from your public GitHub activity.</p>
+				<p><strong>Commit</strong> to an open source project: get an <strong>X</strong> for the day. Commit tomorrow, and start building up your <strong>streak.</strong></p>
+				<p><strong>Get started</strong> going to "/~[Your Github Username]". If your account is valid, it will automatically be added to our system. It may take a few hours for the account to be processed.</p>
+		        <h2>How can I help?</h2>
+		        <p>This project is Open Source under the MIT license. You are more than welcome to fork it, see how it works, add features and fix our bugs. Source code and build instructions can be found on the <a href="http://github.com/ngerakines/cerlan">cerlan project page</a>.
 				<div class='clearfix'>
 					<div id='recentUsers'>
 						<h2>Current Streaks</h2>
