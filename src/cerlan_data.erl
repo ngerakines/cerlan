@@ -3,7 +3,7 @@
 -include("cerlan_github.hrl").
 -include_lib("stdlib/include/qlc.hrl").
 -export([start/0, init/1, process_loop/0]).
--export([user_data/1, create_user/1, user_dates/1]).
+-export([user_data/1, create_user/1, user_dates/1, all_users/0]).
 -export([current_streak_users/0, longest_streak_users/0, force_refresh_user/1]).
 
 start() ->
@@ -162,6 +162,9 @@ create_user(Username, UserID) ->
             current_streak = 0
         })
     end)).
+
+all_users() ->
+    mnesia:activity(transaction, fun() -> qlc:e( qlc:q([R || R <- mnesia:table(user) ]) ) end).
 
 user_data(Username) ->
     user_data(Username, date()).

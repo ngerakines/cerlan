@@ -30,6 +30,24 @@
 		</div>
 		<div id='main'>
 <% footer() %>
+<%@ all(Users) %>
+<% header("CalendERL About Nothing: Tracking Open Source Contributions") %>
+		<div class='title'>CalendERL About Nothing</div>
+		<div class='subtitle'>Tracking Open Source Contributions</div>
+		<div id='borderedMain'>
+			<div id='content'>
+				<div class='clearfix'>
+					<div id='recentUsers'>
+						<h2>All Users</h2>
+						<ul>
+<% draw_user_list(Users) %>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id='main'>
+<% footer() %>
 <%@ header(Title) %>
 <html>
 	<head>

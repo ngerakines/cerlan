@@ -39,6 +39,13 @@ handle_request("/update/\~" ++ Username, Req) ->
     receive done -> ok after 20000 -> ok end,
     Req:respond({302, [{<<"Location">>, list_to_binary("/\~" ++ Username)}], <<"ok">>});
 
+handle_request("/all", Req) ->
+    Users = lists:sort(fun(A, B) -> A#user.username > B#user.username end, cerlan_data:all_users()),
+    Body = erlang:iolist_to_binary(cerlan_thome:all(
+        [{X#user.username, X#user.longest_streak} || X <- Users]
+    )),
+    Req:respond({200, [{<<"content-type">>, <<"text/html">>}], Body});
+
 handle_request("/\~" ++ RawUsername, Req) ->
     {Y, M, {Username, Projects}} = case string:tokens(RawUsername, "/") of
         [UsernameA] ->
