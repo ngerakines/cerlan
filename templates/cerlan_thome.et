@@ -8,8 +8,7 @@
 				<p>The CalendERL About Nothing generates a "<a href="http://lifehacker.com/software/motivation/jerry-seinfelds-productivity-secret-281626.php">Seinfeld Calendar</a>" from your public GitHub activity.</p>
 				<p><strong>Commit</strong> to an open source project: get an <strong>X</strong> for the day. Commit tomorrow, and start building up your <strong>streak.</strong></p>
 				<p><strong>Get started</strong> by going to "/~[Your Github Username]". Your account will automatically be added to our system, but it may take a few hours for the account to be processed.</p>
-				<p>On your user page, you can also filter your calendar view by the projects you commit to. For example, my account page is <a href="/~ngerakines">/~ngerakines</a> but if I only want to see the active days for the <a href="http://github.com/ngerakines/cerlan">cerlan projec</a> then I would append a comma separated list of projects like <a href="/~ngerakines,cerlan">/~ngerakines,cerlan</a>.
-				</p>
+				<p>On your user page, you can also filter your calendar view by the projects you commit to. For example, my account page is <a href="/~ngerakines">/~ngerakines</a> but if I only want to see the active days for the <a href="http://github.com/ngerakines/cerlan">cerlan projec</a> then I would append a comma separated list of projects like <a href="/~ngerakines,cerlan">/~ngerakines,cerlan</a>.</p>
 		        <h2>How can I help?</h2>
 		        <p>This project is Open Source under the MIT license. You are more than welcome to fork it, see how it works, add features and fix our bugs. Source code and build instructions can be found on the <a href="http://github.com/ngerakines/cerlan">cerlan project page</a>.
 				<div class='clearfix'>

@@ -29,6 +29,7 @@
 			</table>
 		</div>
 		<div id='main'>
+		<p>Looking for the <a href="/json/~<% UsernameUrl %>/<% Year %>/<% Month %>">JSON data for this page</a>?</a>.</p>
 <% display_projects_section(Username, PlayedProjects) %>
 			<div id='stats'>
 				<div class='current_streak'>

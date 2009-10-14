@@ -46,6 +46,32 @@ handle_request("/all", Req) ->
     )),
     Req:respond({200, [{<<"content-type">>, <<"text/html">>}], Body});
 
+handle_request("/json/\~" ++ RawUsername, Req) ->
+    {Y, M, {Username, Projects}} = case string:tokens(RawUsername, "/") of
+        [UsernameA] ->
+            {Ya, Ma, _} = date(), {Ya, Ma, split_projects(UsernameA)};
+        [UsernameA, Ya, Ma] ->
+            {list_to_integer(Ya), list_to_integer(Ma), split_projects(UsernameA)}
+    end,
+    Body = case cerlan_data:user_data(Username) of
+        [] ->
+            erlang:iolist_to_binary(mochijson2:encode({struct, [{<<"error">>, <<"No such user.">>}]}));
+        [User] ->
+            UserData = [X || X = {_, _, _, {Y1, M1, _}, _} <- cerlan_data:user_dates(User), Y1 == Y, M1 == M],
+            ActiveProjecst = build_active_projects(UserData),
+            UnfilteredUserData = filtered_user_dates(Projects, UserData),
+            Data = lists:reverse(gen_cal(Y, M, UnfilteredUserData)),
+            UnencodedJSON = {struct, [
+                {<<"user">>, list_to_binary(Username)},
+                {<<"current_streak">>, User#user.current_streak},
+                {<<"longest_streak">>, User#user.longest_streak},
+                {<<"projects">>, [list_to_binary(X) || X <- ActiveProjecst]},
+                {<<"days">>, [Day || {Day, ok} <- lists:flatten(Data)]}
+            ]},
+            erlang:iolist_to_binary(mochijson2:encode(UnencodedJSON))
+    end,
+    Req:respond({200, [{<<"content-type">>, <<"application/json">>}], Body});
+
 handle_request("/\~" ++ RawUsername, Req) ->
     {Y, M, {Username, Projects}} = case string:tokens(RawUsername, "/") of
         [UsernameA] ->
