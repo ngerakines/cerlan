@@ -58,7 +58,10 @@ collect_commits(User, Projects) ->
 
 collect_commits(_, [], Dict) -> dict:to_list(Dict);
 collect_commits(User, [Project | Projects], Dict) ->
-    {struct, [{<<"commits">>, Commits}]} = githubby:user_repos_commits({?LOGIN, ?TOKEN}, User#user.username, Project),
+    Commits = case githubby:user_repos_commits({?LOGIN, ?TOKEN}, User#user.username, Project) of
+        {struct, [{<<"commits">>, CommitList}]} -> CommitList;
+        _ -> []
+    end,
     NewDict = lists:foldl(
         fun(CommitDate, TmpDict) ->
             [DateString|_] = string:tokens(CommitDate, "T"),
