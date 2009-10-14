@@ -16,7 +16,10 @@ init(Parent) ->
 process_loop() ->
     timer:sleep(21600000),
     Users = mnesia:activity(transaction, fun() -> qlc:e( qlc:q([R || R <- mnesia:table(user) ]) ) end),
-    [force_refresh_user(User#user.username) || User <- Users],
+    [begin
+        timer:sleep(2500),
+        (catch force_refresh_user(User#user.username))
+    end || User <- Users],
     cerlan_data:process_loop().
 
 force_refresh_user(Username) ->
