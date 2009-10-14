@@ -36,8 +36,11 @@ force_refresh_user(Username) ->
     end.
 
 fetch_projects(User) ->
-    {struct, [{<<"repositories">>, Repos}]} = githubby:user_repos({?LOGIN, ?TOKEN}, User#user.username),
-    [proplists:get_value(<<"name">>, Values) || {struct, Values} <- Repos]. 
+    case githubby:user_repos({?LOGIN, ?TOKEN}, User#user.username) of
+        {struct, [{<<"repositories">>, Repos}]} ->
+            [proplists:get_value(<<"name">>, Values) || {struct, Values} <- Repos];
+        _ -> []
+    end.
 
 cache_projects(User, Projects) ->
     lists:foreach(
@@ -74,7 +77,7 @@ collect_commits(User, [Project | Projects], Dict) ->
             end
         end,
         Dict,
-        [binary_to_list(proplists:get_value(<<"authored_date">>, Values)) || {struct, Values} <- Commits]
+        [binary_to_list(proplists:get_value(<<"authored_date">>, Values)) || {struct, Values} <- Commits, length(Values) > 0]
     ),
     collect_commits(User, Projects, NewDict).
 
