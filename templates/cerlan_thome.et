@@ -31,7 +31,7 @@
 <%@ header(Title) %>
 <html>
 	<head>
-		<title>Calendar About Gaming: Tracking Gaming Activity</title>
+		<title><% Title %></title>
 		<link href='/images/x_1.png' rel='icon' sizes='48x48' type='image/png' />
 		<link href='/styles/main.css' rel='stylesheet' type='text/css' />
 	</head>
