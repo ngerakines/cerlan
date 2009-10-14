@@ -133,7 +133,7 @@ next_month(Y, M) ->
 
 split_projects(Username) ->
     [UsernameA | Others] = string:tokens(Username, ","),
-    {UsernameA, [list_to_binary(X) || X <- Others]}.
+    {UsernameA, Others}.
 
 filtered_user_dates([], UnfilteredUserData) -> UnfilteredUserData;
 filtered_user_dates(Projects, UnfilteredUserData) ->
