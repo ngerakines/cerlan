@@ -1,0 +1,47 @@
+<%@ index(Current, Longest) %>
+<% header("Calendar About Gaming: Tracking Gaming Activity") %>
+		<div class='title'>Calendar About Gaming</div>
+		<div class='subtitle'>Tracking Gaming Activity</div>
+		<div id='borderedMain'>
+			<div id='content'>
+				<h1>What is this?</h1>
+				<p>The Calendar About Gaming generates a "<a href="http://lifehacker.com/software/motivation/jerry-seinfelds-productivity-secret-281626.php">Seinfeld Calendar</a>" from your public "<a href="http://rupture.com">Rupture</a>" data.</p>
+				<p><strong>Play</strong> a game: get an <strong>X</strong> for the day. Play tomorrow, and start building up your<strong>streak.</strong></p>
+				<div class='clearfix'>
+					<div id='recentUsers'>
+						<h2>Current Streaks</h2>
+						<ul>
+<% draw_user_list(Current) %>
+						</ul>
+					</div>
+					<div id='userRecords'>
+						<h2>Longest Streaks</h2>
+						<ul>
+<% draw_user_list(Longest) %>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id='main'>
+<% footer() %>
+<%@ header(Title) %>
+<html>
+	<head>
+		<title>Calendar About Gaming: Tracking Gaming Activity</title>
+		<link href='/images/x_1.png' rel='icon' sizes='48x48' type='image/png' />
+		<link href='/styles/main.css' rel='stylesheet' type='text/css' />
+	</head>
+	<body>
+<%@ footer() %>
+				<div class='footnote' id='content'>
+					<a href='http://calenderlaboutnothing.com'>CalendERL About Nothing</a> by
+					<a href="http://www.socklabs.com/">Nick Gerakines</a><br />
+					Styles shamelessly lifted from <a href="http://www.calendaraboutnothing.com/">Calendar About Nothing</a>.
+				</div>
+		</div>
+	</body>
+</html>
+<%@ draw_user_list([]) %>
+<%@ draw_user_list([{Gamername, Count} | More])%>
+<li><a href="~<% Gamername %>"><% Gamername %> (<% integer_to_list(Count) %>)</a></li><% draw_user_list(More) %>

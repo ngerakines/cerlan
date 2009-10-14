@@ -1,0 +1,3 @@
+cerlan_github.hrl
+Mnesia*
+ebin/*.beam

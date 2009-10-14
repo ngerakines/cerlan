@@ -1,0 +1,3 @@
+-record(user, {id, username, longest_streak = 0, current_streak = 0, last_updated}).
+-record(project, {id, username, project}).
+-record(day, {id, username, date, projects = []}).

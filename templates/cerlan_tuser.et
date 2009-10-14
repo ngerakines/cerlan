@@ -1,0 +1,80 @@
+<%@ index({Username, UsernameUrl}, LongStreak, CurrentStreak, Month, Year, Dates, {Ly, Lm}, {Ny, Nm}, PlayedProjects, Messages) %>
+<% cerlan_thome:header( Username ++ "'s Calendar") %>
+		<div class='title'>
+			<a href='http://github.com/<% Username %>' rel='me'><% Username %>'s</a> Calendar
+		</div>
+		<div class='subtitle'>Tracking GitHub Activity</div>
+		<% display_messages(Messages) %>
+		<div id='calendar'>
+			<table class="calendar" border="0" cellspacing="0" cellpadding="0">
+				<thead>
+					<tr>
+						<th colspan="2"><a href="/~<% UsernameUrl %>/<% Ly %>/<% Lm %>">Previous Month</a></th>
+						<th colspan="3" class="monthName"><% month_name(Month) %></th>
+						<th colspan="2"><a href="/~<% UsernameUrl %>/<% Ny %>/<% Nm %>" class="next">Next Month</a></th>
+					</tr>
+					<tr class="dayName">
+						<th scope='col'><abbr title='Sunday'>Sun</abbr></th>
+						<th scope='col'><abbr title='Monday'>Mon</abbr></th>
+						<th scope='col'><abbr title='Tuesday'>Tue</abbr></th>
+						<th scope='col'><abbr title='Wednesday'>Wed</abbr></th>
+						<th scope='col'><abbr title='Thursday'>Thu</abbr></th>
+						<th scope='col'><abbr title='Friday'>Fri</abbr></th>
+						<th scope='col'><abbr title='Saturday'>Sat</abbr></th>
+					</tr>
+				</thead>
+				<tbody>
+<% draw_cal(Dates) %>
+				</tbody>
+			</table>
+		</div>
+		<div id='main'>
+<% display_projects_section(Username, PlayedProjects) %>
+			<div id='stats'>
+				<div class='current_streak'>
+					<span class='type'>current streak</span> <span class='num'><% CurrentStreak %> <span class='desc'>days</span></span>
+				</div>
+				<div class='longest_streak'>
+					<span class='type'>longest streak</span> <span class='num'><% LongStreak %> <span class='desc'>days</span></span>
+				</div>
+			</div>
+<% cerlan_thome:footer() %>
+<%@ month_name("1") %>January
+<%@ month_name("2") %>February
+<%@ month_name("3") %>March
+<%@ month_name("4") %>April
+<%@ month_name("5") %>May
+<%@ month_name("6") %>June
+<%@ month_name("7") %>July
+<%@ month_name("8") %>August
+<%@ month_name("9") %>September
+<%@ month_name("10") %>October
+<%@ month_name("11") %>November
+<%@ month_name("12") %>December
+<%@ draw_cal([]) %>
+<%@ draw_cal([Week | Weeks]) %><% draw_week(Week) %><% draw_cal(Weeks) %>
+<%@ draw_week(Week) %>
+<tr class="calendar-row"><% draw_days(Week) %></tr>
+<%@ draw_days([]) %>
+<%@ draw_days([new | Days]) %><td class="otherMonth">&nbsp;</td><% draw_days(Days) %>
+<%@ draw_days([old | Days]) %><td class="otherMonth">&nbsp;</td><% draw_days(Days) %>
+<%@ draw_days([{N, ok} | Days]) %><td class="progressed"><% integer_to_list(N) %><div class="xmarksthespot x-1">&nbsp;</div></td><% draw_days(Days) %>
+<%@ draw_days([{N, _} | Days]) %><td class="slacked"><% integer_to_list(N) %></td><% draw_days(Days) %>
+<%@ display_messages([]) %>
+<%@ display_messages([{warning, Body} | Messages])%>
+<div class="crypt_warning"><% Body %></div>
+<% display_messages(Messages) %>
+<%@ display_messages([{info, Body} | Messages])%><div class="crypt_info"><% Body %></div><% display_messages(Messages) %>
+<%@ draw_projects(_, []) %>
+<%@ draw_projects(Username, [Project | More])%>
+<li><a href="http://github.com/<% Username %>/<% Project %>"><% Project %></a></li><% draw_projects(Username, More) %>
+<%@ display_projects_section(Username, []) %>
+<%@ display_projects_section(Username, PlayedProjects) %>
+			<div class='clearfix'>
+				<div id='recentUsers'>
+					<h2>What they've been working on</h2>
+					<ul>
+<% draw_projects(Username, PlayedProjects) %>
+					</ul>
+				</div>
+			</div>

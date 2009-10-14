@@ -1,0 +1,322 @@
+<%@ css() %>
+/*------------------------------------------------------------------------------------
+  @group Global Reset
+------------------------------------------------------------------------------------*/
+* {
+  padding:0;
+  margin:0;
+}
+h1, h2, h3, h4, h5, h6, p, pre, blockquote, label, ul, ol, dl, fieldset, address { margin:1em 0; }
+li, dd { margin-left:5%; }
+fieldset { padding: .5em; }
+select option{ padding:0 5px; }
+
+.access{ display:none; } /* For accessibility related elements */
+.clear{ clear:both; height:0px; font-size:0px; line-height:0px; overflow:hidden; }
+a{ outline:none; }
+a img{ border:none; }
+
+.clearfix:after {
+    content: ".";
+    display: block;
+    height: 0;
+    clear: both;
+    visibility: hidden;
+}
+* html .clearfix {height: 1%;}
+.clearfix {display:inline-block;}
+.clearfix {display: block;}
+
+/* @end */
+
+/*------------------------------------------------------------------------------------
+  @group General Styles
+------------------------------------------------------------------------------------*/
+
+body{
+  font-size:12px;
+  font-family: "Futura", "Gill Sans", Arial, sans-serif;
+}
+
+.title, .subtitle{
+  margin:0 auto;
+  width:700px;
+  text-align:center;
+}
+
+.title{
+  margin-top:30px;
+  font-size:20px;
+  color:#000;
+  text-transform:uppercase;
+  letter-spacing:3px;
+}
+.subtitle{
+  margin-top:5px;
+  text-transform:uppercase;
+  font-size:11px;
+  color:#999;
+}
+
+.current_streak, .longest_streak{
+  width:150px;
+  float:left;
+}
+.current_streak, .longest_streak{
+  font-family: Helvetica, Arial, sans-serif;
+  text-transform:none;
+}
+
+.type{
+  display:block;
+  font-size:10px;
+  margin-bottom:2px;
+  color:#999;
+  text-transform:uppercase;
+  letter-spacing:0;
+}
+.num{
+  display:block;
+  font-size:30px;
+  font-family: Helvetica, Arial, sans-serif;
+  color:#000;
+  font-weight:bold;
+  letter-spacing:-3px;
+}
+.num .desc{
+  position:relative;
+  top:-8px;
+  left:4px;
+  font-size:11px;
+  letter-spacing:0;
+  color:#999;
+  font-weight:bold;
+}
+
+a{
+  color:#00538d;
+  text-decoration:none;
+}
+
+/* @end */
+
+/*------------------------------------------------------------------------------------
+  @group Homepage
+------------------------------------------------------------------------------------*/
+
+#main, #borderedMain{
+  margin:15px auto 30px auto;
+  padding:0 0 20px 0;
+  width:700px;
+  background:#fff;
+}
+
+#borderedMain{
+  border-top:2px solid #000;
+  border-bottom:1px solid #000;
+}
+
+#content{
+  width: 700px;
+}
+
+#recentUsers, #userRecords{
+  width:340px;
+}
+
+#recentUsers{
+  float:left;
+  padding-right: 10px;
+}
+
+#userRecords{
+  float:right;
+  padding-left: 10px;
+}
+
+.footnote{
+  text-align:right;
+  font-size:11px;
+  color:#666;
+  font-family: Helvetica, Arial, sans-serif;
+  line-height:16px;
+}
+.footnote a{
+  color:#333;
+}
+.footnote a:hover{ text-decoration:underline; }
+
+/* @end */
+
+/*------------------------------------------------------------------------------------
+  @group Calendar Styles
+------------------------------------------------------------------------------------*/
+
+#calendar, #widget{
+  margin:30px auto 15px auto;
+  padding:0 0 20px 0;
+  width:700px;
+  background:#fff;
+  font-size:24px;
+  border-top:2px solid #000;
+  border-bottom:1px solid #000;
+}
+
+
+#calendar table{
+  width:700px;
+  border-spacing:none;
+  border-collapse:collapse;
+}
+
+#calendar table th.monthName{
+  padding:10px 0;
+  font-size:48px;
+  letter-spacing:5px;
+  text-transform:uppercase;
+  color:#b20000;
+}
+#calendar table th a{
+  display:block;
+  color:#00538d;
+  font-weight:normal;
+  text-align:left;
+  text-decoration:none;
+  font-size:11px;
+  text-transform:uppercase;
+}
+#calendar table th a.next{ text-align:right; }
+
+#calendar table td{
+  position:relative;
+  text-align:center;
+  font-size:36px;
+  font-weight:bold;
+  width:100px;
+  height:60px;
+}
+#calendar table td.otherMonth{
+  color:#ccc;
+}
+
+#widget form {
+  width:700px;
+  margin:0; padding:0;
+}
+
+#widget p{
+  font-size: 12px;
+}
+
+#widget textarea {
+  width:400px;
+  height:150px;
+  margin:0 150px;
+}
+
+tr.dayname th{
+  width:100px;
+  padding:5px 0;
+  text-transform:uppercase;
+  font-size:12px;
+  color:#666;
+  font-weight:normal;
+  letter-spacing:2px;
+  border:1px solid #eee;
+  border-left:none;
+  border-right:none;
+}
+tr.dayname abbr{
+  border:none;
+}
+
+/* @end */
+
+/*------------------------------------------------------------------------------------
+  @group X Styles
+------------------------------------------------------------------------------------*/
+
+.otherMonth .xmarksthespot{
+  opacity:0.2;
+}
+
+.xmarksthespot{
+  width:100px;
+  height:60px;
+  position:relative;
+  float:left;
+  margin-top:-60px;
+  z-index:100;
+  background:url(../images/x_1.png) 60% 100% no-repeat;
+}
+
+.x-1{ background-image:url(../images/x_1.png);}
+.x-2{ background-image:url(../images/x_2.png);}
+.x-3{ background-image:url(../images/x_3.png);}
+
+.today {
+  color: green;
+}
+/* @end */
+
+.crypt_error{
+text-align:center;
+margin:5px;
+padding:3px;
+color:#333333;
+border:#FF0000 solid 1px;
+background-color:#FF9966;
+background-image: url("img/error_bg.png");
+}
+.crypt_warning{
+text-align:center;
+margin:5px;
+color:#333333;
+padding:3px;
+border:#FFCC00 solid 1px;
+background-color:#FFFF99;
+background-image: url("img/warning_bg.png");
+}
+.crypt_info{
+text-align:center;
+margin:5px;
+color:#333333;
+padding:3px;
+border:#00FF00 solid 1px;
+background-color:#66FF66;
+background-image: url("img/info_bg.png");
+}
+.crypt_help{
+text-align:center;
+margin:5px;
+color:#333333;
+padding:3px;
+border:#0033CC solid 1px;
+background-color:#33CCFF;
+background-image: url("img/help_bg.png");
+}
+.crypt_infoBox{
+color:#333333;
+padding:3px;
+border:#336600 solid 1px;
+padding-top:10px;
+padding-bottom:5px;
+margin:5px;
+text-align:center;
+background-color:#FFFFFF;
+background-image: url("img/box_info.png");
+background-position:top;
+background-repeat:repeat-x;
+}
+.crypt_errorBox{
+margin:5px;
+color:#333333;
+padding:3px;
+border:#CC3300 solid 1px;
+padding-top:10px;
+text-align:center;
+background-color:#FFFFFF;
+background-image: url("img/box_error.png");
+background-position:top;
+background-repeat:repeat-x;
+}
