@@ -42,7 +42,7 @@ handle_request("/update/\~" ++ Username, Req) ->
 
 handle_request("/all", Req) ->
     heman:stat_set(<<"cerlan_web">>, <<"all_call">>, 1),
-    Users = lists:sort(fun(A, B) -> A#user.username > B#user.username end, cerlan_data:all_users()),
+    Users = lists:sort(fun(A, B) -> A#user.last_updated > B#user.last_updated end, cerlan_data:all_users()),
     Body = erlang:iolist_to_binary(cerlan_thome:all(
         [{X#user.username, X#user.longest_streak} || X <- Users]
     )),
