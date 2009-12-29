@@ -13,7 +13,7 @@ templates:
 	erl -noshell -eval "erltl:compile(\"./templates/cerlan_textra.et\", [{outdir, \"./ebin\"}, report_errors, report_warnings, nowarn_unused_vars])." -s init stop
 
 dev:
-	erl -pa ./ebin -name httpdmaster@`hostname` -boot start_sasl -setcookie supersecret -mnesia dump_log_write_threshold 50000 -mnesia dc_dump_limit 40
+	erl -pa ./ebin ../heman/ ../heman/ebin -name httpdmaster1@`hostname` -boot start_sasl -setcookie supersecret -mnesia dump_log_write_threshold 50000 -mnesia dc_dump_limit 40
 
 dev-server:
-	/opt/local/lib/erlang/lib/mochevent-0.1/priv/mocheventcnode --ip 0.0.0.0 --port 8084 --master httpdmaster@`hostname`
+	/usr/local/lib/erlang/lib/mochevent-0.0.1/priv/mocheventcnode --ip 0.0.0.0 --port 8084 --master httpdmaster1@`hostname`

@@ -11,23 +11,32 @@ start() ->
 
 init(Parent) ->
     proc_lib:init_ack(Parent, {ok, self()}),
+    timer:sleep(30000),
     process_loop().
 
 process_loop() ->
-    timer:sleep(21600000),
+    heman:stat_set(<<"cerlan_data">>, <<"process_loop">>, 1),
     Users = mnesia:activity(transaction, fun() -> qlc:e( qlc:q([R || R <- mnesia:table(user) ]) ) end),
     [begin
         timer:sleep(2500),
         (catch force_refresh_user(User#user.username))
     end || User <- Users],
+    heman:stat_set(<<"cerlan_data">>, <<"users_processed">>, length(Users)),
+    timer:sleep(7200000),
     cerlan_data:process_loop().
 
 force_refresh_user(Username) ->
     case user_data(Username) of
         [User] ->
-            Projects = fetch_projects(User),
+            Projects = try fetch_projects(User) catch
+                _:_ ->
+                    heman:stat_set(<<"cerlan_data">>, <<"bad_project_fetch">>, 1),
+                    []
+            end,
+            heman:stat_set(<<"cerlan_data">>, <<"known_projects">>, length(Projects)),
             cache_projects(User, Projects),
             Commits = collect_commits(User, Projects),
+            heman:stat_set(<<"cerlan_data">>, <<"known_commits">>, length(Commits)),
             update_user_days(User, Commits),
             Data = user_dates(User),
             update_user(User#user{
@@ -39,6 +48,7 @@ force_refresh_user(Username) ->
     end.
 
 fetch_projects(User) ->
+    heman:stat_set(<<"cerlan_data">>, <<"fetch_projects">>, 1),
     case githubby:user_repos({?LOGIN, ?TOKEN}, User#user.username) of
         {struct, [{<<"repositories">>, Repos}]} ->
             [proplists:get_value(<<"name">>, Values) || {struct, Values} <- Repos];
@@ -48,6 +58,7 @@ fetch_projects(User) ->
 cache_projects(User, Projects) ->
     lists:foreach(
         fun(Project) ->
+            heman:stat_set(<<"cerlan_data">>, <<"project_cache">>, 1),
             (catch mnesia:transaction(fun() ->
                 mnesia:write(#project{
                     id = {User#user.username, Project},

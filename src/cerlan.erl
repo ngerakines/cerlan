@@ -8,6 +8,29 @@ start() ->
     mnesia:start(),
     crypto:start(),
     net_adm:world(),
+    application:start(heman),
+    heman:rule_set({<<"cerlan_data">>, <<"fetch_projects">>}, increase),
+    heman:rule_set({<<"cerlan_data">>, <<"known_commits">>}, increase),
+    heman:rule_set({<<"cerlan_data">>, <<"known_projects">>}, increase),
+    heman:rule_set({<<"cerlan_data">>, <<"process_loop">>}, increase),
+    heman:rule_set({<<"cerlan_data">>, <<"project_cache">>}, increase),
+    heman:rule_set({<<"cerlan_web">>, <<"fourofour">>}, increase),
+    heman:rule_set({<<"cerlan_web">>, <<"json_user_call">>}, increase),
+    heman:rule_set({<<"cerlan_web">>, <<"no_github_user">>}, increase),
+    heman:rule_set({<<"cerlan_web">>, <<"no_user_call">>}, increase),
+    heman:rule_set({<<"cerlan_web">>, <<"user_call">>}, increase),
+    heman:health_set(<<"cerlan_data">>, 1, <<"fetch_projects">>, [
+        {{hours, 6, sum}, {under, 10}, {decrease, 30}},
+        {{hours, 6, sum}, {under, 20}, {decrease, 10}},
+        {{hours, 6, sum}, {range, 20, 35}, {increase, 5}},
+        {{hours, 6, sum}, {range, 35, 40}, {increase, 10}},
+        {{hours, 6, sum}, {over, 40}, {decrease, 30}}
+    ]),
+    heman:health_set(<<"cerlan_data">>, 2, <<"process_loop">>, [
+        {{hours, 6, sum}, {under, 1}, {decrease, 30}},
+        {{hours, 6, sum}, {range, 1, 4}, {increase, 20}},
+        {{hours, 6, sum}, {over, 3}, {decrease, 30}}
+    ]),
     application:start(cerlan).
 
 start(_Type, _Args) ->
@@ -55,3 +78,4 @@ reload() ->
         code:soft_purge(X),
         code:load_abs("./ebin/" ++ atom_to_list(X))
     end || X <- [cerlan, cerlan_dispatch, cerlan_mochevent, cerlan_data, cerlan_thome, cerlan_tuser, cerlan_textra]].
+
