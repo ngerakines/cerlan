@@ -42,9 +42,21 @@ handle_request("/update/\~" ++ Username, Req) ->
 
 handle_request("/all", Req) ->
     heman:stat_set(<<"cerlan_web">>, <<"all_call">>, 1),
-    Users = lists:sort(fun(A, B) -> A#user.last_updated > B#user.last_updated end, cerlan_data:all_users()),
+    Users = lists:sort(fun(A, B) ->
+        case A#user.last_updated == B#user.last_updated of
+            true ->
+                case A#user.importance == B#user.importance of
+                    true ->
+                        A#user.username < B#user.username;
+                    _ ->
+                        A#user.importance > B#user.importance
+                end;
+            _ ->
+                A#user.last_updated > B#user.last_updated
+        end
+    end, cerlan_data:all_users()),
     Body = erlang:iolist_to_binary(cerlan_thome:all(
-        [{X#user.username, X#user.longest_streak} || X <- Users]
+        [{X#user.username, X#user.longest_streak, X#user.last_updated, erlang:round(X#user.importance)} || X <- Users, X#user.last_updated =/= undefined]
     )),
     Req:respond({200, [{<<"content-type">>, <<"text/html">>}], Body});
 

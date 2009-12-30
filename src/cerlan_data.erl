@@ -4,7 +4,7 @@
 -include_lib("stdlib/include/qlc.hrl").
 -export([start/0, init/1, process_loop/0]).
 -export([user_data/1, create_user/1, user_dates/1, all_users/0]).
--export([current_streak_users/0, longest_streak_users/0, force_refresh_user/1]).
+-export([current_streak_users/0, longest_streak_users/0, refresh_user/1, iterate_users/1]).
 
 start() ->
     proc_lib:start_link(cerlan_data, init, [self()]).
@@ -17,15 +17,27 @@ init(Parent) ->
 process_loop() ->
     heman:stat_set(<<"cerlan_data">>, <<"process_loop">>, 1),
     Users = mnesia:activity(transaction, fun() -> qlc:e( qlc:q([R || R <- mnesia:table(user) ]) ) end),
-    [begin
-        timer:sleep(2500),
-        (catch force_refresh_user(User#user.username)),
-        heman:stat_set(<<"cerlan_data">>, <<"users_processed">>, 1)
-    end || User <- Users],
+    Sorted = lists:sort(fun(A, B) -> A#user.importance > B#user.importance end, Users),
+    cerlan_data:iterate_users(Sorted),
     heman:stat_set(<<"cerlan_data">>, <<"users_processed">>, length(Users)),
     cerlan_data:process_loop().
 
-force_refresh_user(Username) ->
+iterate_users([]) -> ok;
+iterate_users([User | Users]) ->
+    Now = calendar:date_to_gregorian_days(date()),
+    case {Now - calendar:date_to_gregorian_days(User#user.last_updated), User#user.importance} of
+        {L, 0} when L < 7 ->
+            % io:format("SKIP '~s' (~p / 0)~n", [User#user.username, L]),
+            ok;
+        {L, U} ->
+            % io:format("User '~s' (~p - ~p / ~p)~n", [User#user.username, User#user.last_updated, L, U]),
+            timer:sleep(2500),
+            cerlan_data:refresh_user(User#user.username),
+            heman:stat_set(<<"cerlan_data">>, <<"users_processed">>, 1)
+    end,
+    cerlan_data:iterate_users(Users).
+
+refresh_user(Username) ->
     case user_data(Username) of
         [User] ->
             Projects = try fetch_projects(User) catch
@@ -39,12 +51,37 @@ force_refresh_user(Username) ->
             heman:stat_set(<<"cerlan_data">>, <<"known_commits">>, length(Commits)),
             update_user_days(User, Commits),
             Data = user_dates(User),
+            LongStreak = find_streak(Data),
+            CurrentStreak = find_current_streak(Data),
+            Importance = gauge_importance(User#user{ longest_streak = LongStreak, current_streak = CurrentStreak }, Projects, Commits),
             update_user(User#user{
-                longest_streak = find_streak(Data),
-                current_streak = find_current_streak(Data),
+                longest_streak = LongStreak,
+                current_streak = CurrentStreak,
+                importance = Importance,
                 last_updated = date()
             });
         _ -> ok
+    end.
+
+gauge_importance(_User, [], _Commits) ->
+    %% No projects gets a 0
+    heman:stat_set(<<"cerlan_data">>, <<"unimportant_no_projects">>, 1),
+    0;
+gauge_importance(_User, _Projects, []) ->
+    %% No commits gets 0
+    heman:stat_set(<<"cerlan_data">>, <<"unimportant_no_commits">>, 1),
+    0;
+gauge_importance(User, _Projects, _Commits) when User#user.longest_streak == 0 ->
+    %% No streak (has projects but no commits) gets a 0
+    heman:stat_set(<<"cerlan_data">>, <<"unimportant_no_streak">>, 1),
+    0;
+gauge_importance(User, Projects, [{Last, _} | _] = Commits) ->
+    Avg = lists:foldl(fun({_, X}, Y) -> length(X) + Y end, 0, Commits) / length(Commits),
+    Modifier = calendar:date_to_gregorian_days(date()) - calendar:date_to_gregorian_days(Last) + 1,
+    Total = 30 + User#user.longest_streak + User#user.current_streak + length(Projects) + Avg - Modifier,
+    case Total < 30 of
+        true -> 30;
+        _ -> erlang:round(Total)
     end.
 
 fetch_projects(User) ->
@@ -73,7 +110,7 @@ cache_projects(User, Projects) ->
 collect_commits(User, Projects) ->
     collect_commits(User, [binary_to_list(X) || X <- Projects], dict:new()).
 
-collect_commits(_, [], Dict) -> dict:to_list(Dict);
+collect_commits(_, [], Dict) -> lists:reverse(lists:keysort(1, dict:to_list(Dict)));
 collect_commits(User, [Project | Projects], Dict) ->
     timer:sleep(1000),
     Commits = case githubby:user_repos_commits({?LOGIN, ?TOKEN}, User#user.username, Project) of

@@ -78,3 +78,5 @@
 <%@ draw_user_list([]) %>
 <%@ draw_user_list([{Gamername, Count} | More])%>
 <li><a href="~<% Gamername %>"><% Gamername %> (<% integer_to_list(Count) %>)</a></li><% draw_user_list(More) %>
+<%@ draw_user_list([{Gamername, Count, {Y, M, D}, Importance} | More])%>
+<li><a href="~<% Gamername %>"><% Gamername %> (<% integer_to_list(Count) %>)</a> <% integer_to_list(Importance) %> <strong style="color: #727272;"><% integer_to_list(Y) %>-<% integer_to_list(M) %>-<% integer_to_list(D) %></strong></li><% draw_user_list(More) %>
