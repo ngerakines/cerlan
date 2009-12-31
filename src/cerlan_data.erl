@@ -11,6 +11,7 @@ start() ->
 
 init(Parent) ->
     proc_lib:init_ack(Parent, {ok, self()}),
+    register(cerlan_data, self()),
     timer:sleep(30000),
     process_loop().
 
@@ -30,17 +31,17 @@ iterate_users([User | Users]) ->
     end,
     case {LastUpdated, User#user.importance} of
         {L, 0} when L < 7 ->
-            % io:format("SKIP '~s' (~p / 0)~n", [User#user.username, L]),
+            io:format("SKIP '~s' (~p / 0)~n", [User#user.username, L]),
             ok;
-        {_L, _U} ->
-            % io:format("User '~s' (~p - ~p / ~p)~n", [User#user.username, User#user.last_updated, L, U]),
+        {L, U} ->
+            io:format("User '~s' (~p - ~p / ~p)~n", [User#user.username, User#user.last_updated, L, U]),
             timer:sleep(2500),
             cerlan_data:refresh_user(User#user.username),
             heman:stat_set(<<"cerlan_data">>, <<"users_processed">>, 1)
     end,
     cerlan_data:iterate_users(Users).
 
-refresh_user(X) when is_list(X) -> refresh_user(list_to_binary(X));
+refresh_user(X) when is_binary(X) -> refresh_user(binary_to_list(X));
 refresh_user(Username) ->
    case user_data(Username) of
         [User] ->
@@ -64,7 +65,9 @@ refresh_user(Username) ->
                 importance = Importance,
                 last_updated = date()
             });
-        _ -> ok
+        Other ->
+            io:format("Something is horribly wrong: ~p -- ~p~n", [Username, Other]),
+            ok
     end.
 
 gauge_importance(_User, [], _Commits) ->
@@ -94,13 +97,20 @@ fetch_projects(User) ->
         {struct, [{<<"repositories">>, Repos}]} ->
             lists:foldl(fun(Project, Projects) ->
                 timer:sleep(1500),
-                Branches = case githubby:repos_refs({?LOGIN, ?TOKEN}, User#user.username, binary_to_list(Project)) of
+                Branches = case (catch githubby:repos_refs({?LOGIN, ?TOKEN}, User#user.username, binary_to_list(Project))) of
                     {struct,[{<<"branches">>, {struct, X}}]} -> [Y || {Y, _} <- X];
-                    _ -> [<<"master">>]
+                    X ->
+                        io:format("unexpected response in fetch_projects/1 (fetch repos refs) ~p~n", [X]),
+                        heman:stat_set(<<"cerlan_data">>, <<"fail_repos_refs">>, 1),
+                        [<<"master">>]
                 end,
+                heman:stat_set(<<"cerlan_data">>, <<"known_branches">>, length(Branches)),
                 [{Project, Branches} | Projects]
             end, [], [proplists:get_value(<<"name">>, Values) || {struct, Values} <- Repos]);
-        _ -> []
+        X ->
+            io:format("unexpected response in fetch_projects/1 ~p~n", [X]),
+            heman:stat_set(<<"cerlan_data">>, <<"fail_user_repos">>, 1),
+            []
     end.
 
 cache_projects(User, Projects) ->
