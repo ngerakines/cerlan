@@ -11,6 +11,7 @@ templates:
 	erl -noshell -eval "erltl:compile(\"./templates/cerlan_thome.et\", [{outdir, \"./ebin\"}, report_errors, report_warnings, nowarn_unused_vars])." -s init stop
 	erl -noshell -eval "erltl:compile(\"./templates/cerlan_tuser.et\", [{outdir, \"./ebin\"}, report_errors, report_warnings, nowarn_unused_vars])." -s init stop
 	erl -noshell -eval "erltl:compile(\"./templates/cerlan_textra.et\", [{outdir, \"./ebin\"}, report_errors, report_warnings, nowarn_unused_vars])." -s init stop
+	erl -noshell -eval "erltl:compile(\"./templates/cerlan_tfaq.et\", [{outdir, \"./ebin\"}, report_errors, report_warnings, nowarn_unused_vars])." -s init stop
 
 dev:
 	erl -pa ./ebin ../heman/ ../heman/ebin -name httpdmaster1@`hostname` -boot start_sasl -setcookie supersecret -mnesia dump_log_write_threshold 50000 -mnesia dc_dump_limit 40

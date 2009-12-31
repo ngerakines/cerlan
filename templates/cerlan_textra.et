@@ -59,7 +59,7 @@ body{
 }
 
 .current_streak, .longest_streak{
-  width:150px;
+  width:130px;
   float:left;
 }
 .current_streak, .longest_streak{
@@ -121,7 +121,7 @@ a{
 }
 
 #recentUsers, #userRecords{
-  width:340px;
+  width:220px;
 }
 
 #recentUsers{
@@ -130,7 +130,8 @@ a{
 }
 
 #userRecords{
-  float:right;
+  // float:right;
+  float:left;
   padding-left: 10px;
 }
 

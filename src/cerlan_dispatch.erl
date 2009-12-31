@@ -26,8 +26,13 @@ handle_request("/styles/main.css", Req) ->
 handle_request("/", Req) ->
     Body = erlang:iolist_to_binary(cerlan_thome:index(
         [{X#user.username, X#user.current_streak} || X <- cerlan_data:current_streak_users(), X#user.current_streak > 0],
-        [{X#user.username, X#user.longest_streak} || X <- cerlan_data:longest_streak_users(), X#user.longest_streak > 0]
+        [{X#user.username, X#user.longest_streak} || X <- cerlan_data:longest_streak_users(), X#user.longest_streak > 0],
+        [{X#user.username, X#user.longest_streak} || X <- cerlan_data:important_users(), X#user.importance > 0]
     )),
+    Req:respond({200, [{<<"content-type">>, <<"text/html">>}], Body});
+
+handle_request("/faq", Req) ->
+    Body = erlang:iolist_to_binary(cerlan_tfaq:index()),
     Req:respond({200, [{<<"content-type">>, <<"text/html">>}], Body});
 
 handle_request("/update/\~" ++ Username, Req) ->
@@ -109,7 +114,8 @@ handle_request("/\~" ++ RawUsername, Req) ->
             erlang:iolist_to_binary(cerlan_tuser:index(
                 {Username, Username},
                 "0",
-                "",
+                "0",
+                "0",
                 integer_to_list(M),
                 integer_to_list(Y),
                 [],
@@ -128,6 +134,7 @@ handle_request("/\~" ++ RawUsername, Req) ->
                 {Username, compose_url(Username, Projects)},
                 integer_to_list(User#user.longest_streak),
                 integer_to_list(User#user.current_streak),
+                integer_to_list(erlang:round(User#user.importance)),
                 integer_to_list(M),
                 integer_to_list(Y),
                 Data,

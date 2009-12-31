@@ -1,4 +1,4 @@
-<%@ index({Username, UsernameUrl}, LongStreak, CurrentStreak, Month, Year, Dates, {Ly, Lm}, {Ny, Nm}, PlayedProjects, Messages) %>
+<%@ index({Username, UsernameUrl}, LongStreak, CurrentStreak, Importance, Month, Year, Dates, {Ly, Lm}, {Ny, Nm}, PlayedProjects, Messages) %>
 <% cerlan_thome:header( Username ++ "'s Calendar") %>
 		<div class='title'>
 			<a href='http://github.com/<% Username %>' rel='me'><% Username %>'s</a> Calendar
@@ -37,6 +37,9 @@
 				</div>
 				<div class='longest_streak'>
 					<span class='type'>longest streak</span> <span class='num'><% LongStreak %> <span class='desc'>days</span></span>
+				</div>
+				<div class='longest_streak'>
+					<span class='type'>Score</span> <span class='num'><% Importance %></span>
 				</div>
 			</div>
 <% cerlan_thome:footer() %>

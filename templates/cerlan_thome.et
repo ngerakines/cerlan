@@ -1,4 +1,4 @@
-<%@ index(Current, Longest) %>
+<%@ index(Current, Longest, Scored) %>
 <% header("CalendERL About Nothing: Tracking Open Source Contributions") %>
 		<div class='title'>CalendERL About Nothing</div>
 		<div class='subtitle'>Tracking Open Source Contributions</div>
@@ -10,7 +10,8 @@
 				<p><strong>Get started</strong> by going to "/~[Your Github Username]". Your account will automatically be added to our system, but it may take a few hours for the account to be processed.</p>
 				<p>On your user page, you can also filter your calendar view by the projects you commit to. For example, my account page is <a href="/~ngerakines">/~ngerakines</a> but if I only want to see the active days for the <a href="http://github.com/ngerakines/cerlan">cerlan projec</a> then I would append a comma separated list of projects like <a href="/~ngerakines,cerlan">/~ngerakines,cerlan</a>.</p>
 		        <h2>How can I help?</h2>
-		        <p>This project is Open Source under the MIT license. You are more than welcome to fork it, see how it works, add features and fix our bugs. Source code and build instructions can be found on the <a href="http://github.com/ngerakines/cerlan">cerlan project page</a>.
+		        <p>This project is Open Source under the MIT license. You are more than welcome to fork it, see how it works, add features and fix our bugs. Source code and build instructions can be found on the <a href="http://github.com/ngerakines/cerlan">cerlan project page</a>.</p>
+<p>Have more questions? Go to the <a href="/faq">FAQ page</a>.</p>
 				<div class='clearfix'>
 					<div id='recentUsers'>
 						<h2>Current Streaks</h2>
@@ -24,6 +25,13 @@
 <% draw_user_list(Longest) %>
 						</ul>
 					</div>
+					<div id='userRecords'>
+						<h2>Movers and Shakers</h2>
+						<ul>
+<% draw_user_list(Scored) %>
+						</ul>
+					</div>
+                                    <p><center>See <a href="/all">all users</a>.</center></p>
 				</div>
 			</div>
 		</div>

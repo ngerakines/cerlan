@@ -3,7 +3,7 @@
 -include("cerlan_github.hrl").
 -include_lib("stdlib/include/qlc.hrl").
 -export([start/0, init/1, process_loop/0]).
--export([user_data/1, create_user/1, user_dates/1, all_users/0]).
+-export([user_data/1, create_user/1, user_dates/1, all_users/0, important_users/0]).
 -export([current_streak_users/0, longest_streak_users/0, refresh_user/1, iterate_users/1]).
 
 start() ->
@@ -24,8 +24,11 @@ process_loop() ->
 
 iterate_users([]) -> ok;
 iterate_users([User | Users]) ->
-    Now = calendar:date_to_gregorian_days(date()),
-    case {Now - calendar:date_to_gregorian_days(User#user.last_updated), User#user.importance} of
+    LastUpdated = case User#user.last_updated of
+        undefined -> 90;
+        Other -> calendar:date_to_gregorian_days(date()) - calendar:date_to_gregorian_days(Other)
+    end,
+    case {LastUpdated, User#user.importance} of
         {L, 0} when L < 7 ->
             % io:format("SKIP '~s' (~p / 0)~n", [User#user.username, L]),
             ok;
@@ -37,8 +40,9 @@ iterate_users([User | Users]) ->
     end,
     cerlan_data:iterate_users(Users).
 
+refresh_user(X) when is_list(X) -> refresh_user(list_to_binary(X));
 refresh_user(Username) ->
-    case user_data(Username) of
+   case user_data(Username) of
         [User] ->
             Projects = try fetch_projects(User) catch
                 _:_ ->
@@ -86,7 +90,7 @@ gauge_importance(User, Projects, [{Last, _} | _] = Commits) ->
 
 fetch_projects(User) ->
     heman:stat_set(<<"cerlan_data">>, <<"fetch_projects">>, 1),
-    case githubby:user_repos({?LOGIN, ?TOKEN}, User#user.username) of
+    case (catch githubby:user_repos({?LOGIN, ?TOKEN}, User#user.username)) of
         {struct, [{<<"repositories">>, Repos}]} ->
             [proplists:get_value(<<"name">>, Values) || {struct, Values} <- Repos];
         _ -> []
@@ -113,7 +117,7 @@ collect_commits(User, Projects) ->
 collect_commits(_, [], Dict) -> lists:reverse(lists:keysort(1, dict:to_list(Dict)));
 collect_commits(User, [Project | Projects], Dict) ->
     timer:sleep(1000),
-    Commits = case githubby:user_repos_commits({?LOGIN, ?TOKEN}, User#user.username, Project) of
+    Commits = case (catch githubby:user_repos_commits({?LOGIN, ?TOKEN}, User#user.username, Project)) of
         {struct, [{<<"commits">>, {struct, []}}]} -> [];
         {struct, [{<<"commits">>, CommitList}]} -> CommitList;
         _ -> []
@@ -197,7 +201,9 @@ update_user_days(User, Days) ->
 create_user(Username) ->
     case (catch githubby:user_info({?LOGIN, ?TOKEN}, Username)) of
         {struct, [{<<"user">>, {struct, UserData}}]} ->
-            create_user(Username, proplists:get_value(<<"id">>, UserData));
+            create_user(Username, proplists:get_value(<<"id">>, UserData)),
+            cerlan_data:refresh_user(Username),
+            ok;
         _ -> nop
     end.
 
@@ -244,6 +250,15 @@ longest_streak_users() ->
         qlc:e(Q)
     end),
     SortedUsers = lists:sort(fun(A, B) -> A#user.longest_streak > B#user.longest_streak end, Users),
+    {Top, _} = lists:split(10, SortedUsers),
+    Top.
+
+important_users() ->
+    Users = mnesia:activity(transaction, fun() ->
+        Q = qlc:q([R || R <- mnesia:table(user)]),
+        qlc:e(Q)
+    end),
+    SortedUsers = lists:sort(fun(A, B) -> A#user.importance > B#user.importance end, Users),
     {Top, _} = lists:split(10, SortedUsers),
     Top.
 
