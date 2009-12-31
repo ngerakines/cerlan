@@ -1,0 +1,45 @@
+<%@ index() %>
+<% cerlan_thome:header("CalendERL About Nothing: Tracking Open Source Contributions") %>
+		<div class='title'>CalendERL About Nothing</div>
+		<div class='subtitle'>Tracking Open Source Contributions</div>
+		<div id='borderedMain'>
+			<div id='content'>
+				<h1>Frequently Asked Questions</h1>
+				<h2>what is this?</h2>
+				<p>The CalendERL About Nothing generates a "<a href="http://lifehacker.com/software/motivation/jerry-seinfelds-productivity-secret-281626.php">Seinfeld Calendar</a>" from your public GitHub activity.</p>
+				<p><strong>Commit</strong> to an open source project: get an <strong>X</strong> for the day. Commit tomorrow, and start building up your <strong>streak.</strong></p>
+				<p><strong>Get started</strong> by going to "/~[Your Github Username]". Your account will automatically be added to our system, but it may take a few hours for the account to be processed.</p>
+				<p>On your user page, you can also filter your calendar view by the projects you commit to. For example, my account page is <a href="/~ngerakines">/~ngerakines</a> but if I only want to see the active days for the <a href="http://github.com/ngerakines/cerlan">cerlan projec</a> then I would append a comma separated list of projects like <a href="/~ngerakines,cerlan">/~ngerakines,cerlan</a>.</p>
+		        	<h2>How can I help?</h2>
+		        	<p>This project is Open Source under the MIT license. You are more than welcome to fork it, see how it works, add features and fix our bugs. Source code and build instructions can be found on the <a href="http://github.com/ngerakines/cerlan">cerlan project page</a>.
+			</div>
+<h2>What exactly is a streak?</h2>
+<p>A streak represents a set of commits that span consecutive days. If you have commits on a Monday, Tuesday and Wednesday then you'd get a 3 day streak.</p>
+<p>Cerlan also stores your current streak and your longest streak. Your longest streak is just that, the longest streak that we know about for you. Your current streak is a streak from today to the begining of that streak.</p>
+<p>Sometimes cerlan doesn't know about your most recent commit for today and your current streak may appear to be 0. If this happens, just wait for cerlan to pick up today's commits and check back later in the day.
+<h2>What data of mine counts?</h2>
+<p>Cerlan will crawl all of your github activity for current public projects. That means, the following commits won't count:</p>
+<ul>
+<li>Commits in projects that are private or hidden.</li>
+<li>Commits counted toward projects that have been deleted.</li>
+</ul>
+<p>The exception is if you have a public project with commits that are counted by cerlan and then the project is deleted otherwise hidden from public consumption. Those commits are still counted.</p>
+<h2>How often are my projects crawled?</h2>
+<p>Cerlan uses a score to determine your importance in the community and that score also impacts how often your GitHub account is checked for activity. The score is based on your current/recent activity as well as some historical stats. You won't be crawled very often if:</p>
+<ul>
+<li>You don't have any projects.</li>
+<li>You don't have any commits.</li>
+<li>You've never had a long streak.</li>
+</ul>
+<p>On the other hand, to increase your importance try this:</p>
+<ul>
+<li>Have multiple projects.</li>
+<li>Have a long streak.</li>
+<li>Have a long current streak.</li>
+<li>Have alot of recent activity.</li>
+</ul>
+<h2>It seems some of my commits are missing.</h2>
+<p>That happens. Sometimes I find bugs or missing functionality. If you use this site and find a bug, please go to the <a href="http://github.com/ngerakines/cerlan">cerlan project page</a> and create a new issue.</p>
+		</div>
+		<div id='main'>
+<% cerlan_thome:footer() %>

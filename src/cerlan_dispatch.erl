@@ -146,7 +146,7 @@ handle_request("/\~" ++ RawUsername, Req) ->
     end,
     Req:respond({200, [{<<"content-type">>, <<"text/html">>}], Body});
 
-handle_request(Other, Req) ->
+handle_request(_Other, Req) ->
     heman:stat_set(<<"cerlan_web">>, <<"fourofour">>, 1),
     Req:respond({200, [{<<"content-type">>, <<"text/html">>}], <<"<h1>Not found.</h1>">>}).
 

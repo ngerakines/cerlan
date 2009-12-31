@@ -32,7 +32,7 @@ iterate_users([User | Users]) ->
         {L, 0} when L < 7 ->
             % io:format("SKIP '~s' (~p / 0)~n", [User#user.username, L]),
             ok;
-        {L, U} ->
+        {_L, _U} ->
             % io:format("User '~s' (~p - ~p / ~p)~n", [User#user.username, User#user.last_updated, L, U]),
             timer:sleep(2500),
             cerlan_data:refresh_user(User#user.username),
@@ -92,32 +92,43 @@ fetch_projects(User) ->
     heman:stat_set(<<"cerlan_data">>, <<"fetch_projects">>, 1),
     case (catch githubby:user_repos({?LOGIN, ?TOKEN}, User#user.username)) of
         {struct, [{<<"repositories">>, Repos}]} ->
-            [proplists:get_value(<<"name">>, Values) || {struct, Values} <- Repos];
+            lists:foldl(fun(Project, Projects) ->
+                timer:sleep(1500),
+                Branches = case githubby:repos_refs({?LOGIN, ?TOKEN}, User#user.username, binary_to_list(Project)) of
+                    {struct,[{<<"branches">>, {struct, X}}]} -> [Y || {Y, _} <- X];
+                    _ -> [<<"master">>]
+                end,
+                [{Project, Branches} | Projects]
+            end, [], [proplists:get_value(<<"name">>, Values) || {struct, Values} <- Repos]);
         _ -> []
     end.
 
 cache_projects(User, Projects) ->
     lists:foreach(
-        fun(Project) ->
+        fun({Project, Branches}) ->
             heman:stat_set(<<"cerlan_data">>, <<"project_cache">>, 1),
             (catch mnesia:transaction(fun() ->
                 mnesia:write(#project{
                     id = {User#user.username, Project},
                     username = User#user.username,
-                    project = Project
+                    project = Project,
+                    branches = Branches
                 })
             end))
         end,
-        [binary_to_list(X) || X <- Projects]
+        Projects
     ).
 
 collect_commits(User, Projects) ->
-    collect_commits(User, [binary_to_list(X) || X <- Projects], dict:new()).
+    ExpandedProjects = lists:foldl(fun({Project, Branches}, Acc) ->
+        Acc ++ [{binary_to_list(Project), binary_to_list(Branch)} || Branch <- Branches]
+    end, [], Projects),
+    collect_commits(User, ExpandedProjects, dict:new()).
 
 collect_commits(_, [], Dict) -> lists:reverse(lists:keysort(1, dict:to_list(Dict)));
-collect_commits(User, [Project | Projects], Dict) ->
+collect_commits(User, [{Project, Branch} | Projects], Dict) ->
     timer:sleep(1000),
-    Commits = case (catch githubby:user_repos_commits({?LOGIN, ?TOKEN}, User#user.username, Project)) of
+    Commits = case (catch githubby:user_repos_commits({?LOGIN, ?TOKEN}, User#user.username, Project, Branch)) of
         {struct, [{<<"commits">>, {struct, []}}]} -> [];
         {struct, [{<<"commits">>, CommitList}]} -> CommitList;
         _ -> []
