@@ -29,12 +29,17 @@ start() ->
         {{hours, 6, sum}, {under, 20}, {decrease, 10}},
         {{hours, 6, sum}, {range, 20, 35}, {increase, 5}},
         {{hours, 6, sum}, {range, 35, 40}, {increase, 10}},
-        {{hours, 6, sum}, {over, 40}, {decrease, 30}}
+        {{hours, 6, sum}, {over, 40}, {increase, 20}}
     ]),
     heman:health_set(<<"cerlan_data">>, 2, <<"process_loop">>, [
-        {{hours, 6, sum}, {under, 1}, {decrease, 30}},
-        {{hours, 6, sum}, {range, 1, 4}, {increase, 20}},
-        {{hours, 6, sum}, {over, 3}, {decrease, 30}}
+        {{hours, 12, sum}, {under, 1}, {decrease, 30}},
+        {{hours, 12, sum}, {range, 1, 4}, {increase, 10}},
+        {{hours, 12, sum}, {over, 3}, {increase, 20}}
+    ]),
+    heman:health_set(<<"cerlan_data">>, 3, <<"users_processed">>, [
+        {{hours, 24, sum}, {under, 1000}, {decrease, 30}},
+        {{hours, 24, sum}, {range, 1000, 1500}, {increase, 10}},
+        {{hours, 24, sum}, {over, 1500}, {increase, 20}}
     ]),
     application:start(cerlan).
 
