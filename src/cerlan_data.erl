@@ -6,6 +6,10 @@
 -export([user_data/1, create_user/1, user_dates/1, all_users/0, important_users/0]).
 -export([current_streak_users/0, longest_streak_users/0, refresh_user/1, iterate_users/1]).
 
+% --
+-compile(export_all).
+% --
+
 start() ->
     proc_lib:start_link(cerlan_data, init, [self()]).
 
@@ -16,44 +20,38 @@ init(Parent) ->
     process_loop().
 
 process_loop() ->
-    heman:stat_set(<<"cerlan_data">>, <<"process_loop">>, 1),
-    Users = mnesia:activity(transaction, fun() -> qlc:e( qlc:q([R || R <- mnesia:table(user) ]) ) end),
-    Sorted = lists:sort(fun(A, B) -> A#user.importance > B#user.importance end, Users),
+    Sorted = lists:sort(fun(A, B) -> A#user.importance > B#user.importance end, all_users()),
     cerlan_data:iterate_users(Sorted),
-    heman:stat_set(<<"cerlan_data">>, <<"users_processed">>, length(Users)),
     cerlan_data:process_loop().
 
 iterate_users([]) -> ok;
+iterate_users([User = #user{ last_updated = -1 } | Users]) ->
+    cerlan_data:iterate_users(Users);
 iterate_users([User | Users]) ->
     LastUpdated = case User#user.last_updated of
-        undefined -> 90;
-        Other -> calendar:date_to_gregorian_days(date()) - calendar:date_to_gregorian_days(Other)
+        {_, _, _} -> 90;
+        0 -> 60 * 60 * 24 * 4;
+        Other -> calendar:datetime_to_gregorian_seconds({date(), time()}) - Other
     end,
     case {LastUpdated, User#user.importance} of
-        {L, 0} when L < 7 ->
-            io:format("SKIP '~s' (~p / 0)~n", [User#user.username, L]),
+        {L, 0} when L < 60 * 60 * 24 * 4 ->
             ok;
         {L, U} ->
-            io:format("User '~s' (~p - ~p / ~p)~n", [User#user.username, User#user.last_updated, L, U]),
             timer:sleep(2500),
-            cerlan_data:refresh_user(User#user.username),
-            heman:stat_set(<<"cerlan_data">>, <<"users_processed">>, 1)
+            cerlan_data:refresh_user(User#user.username), ok
+            % heman:stat_set(<<"cerlan_data">>, <<"users_processed">>, 1)
     end,
     cerlan_data:iterate_users(Users).
 
-refresh_user(X) when is_binary(X) -> refresh_user(binary_to_list(X));
 refresh_user(Username) ->
    case user_data(Username) of
         [User] ->
             Projects = try fetch_projects(User) catch
-                _:_ ->
-                    heman:stat_set(<<"cerlan_data">>, <<"bad_project_fetch">>, 1),
+                X:Y ->
                     []
             end,
-            heman:stat_set(<<"cerlan_data">>, <<"known_projects">>, length(Projects)),
             cache_projects(User, Projects),
             Commits = collect_commits(User, Projects),
-            heman:stat_set(<<"cerlan_data">>, <<"known_commits">>, length(Commits)),
             update_user_days(User, Commits),
             Data = user_dates(User),
             LongStreak = find_streak(Data),
@@ -63,24 +61,20 @@ refresh_user(Username) ->
                 longest_streak = LongStreak,
                 current_streak = CurrentStreak,
                 importance = Importance,
-                last_updated = date()
+                last_updated = calendar:datetime_to_gregorian_seconds({date(), time()})
             });
         Other ->
-            io:format("Something is horribly wrong: ~p -- ~p~n", [Username, Other]),
             ok
     end.
 
-gauge_importance(_User, [], _Commits) ->
+gauge_importance(User, [], _Commits) ->
     %% No projects gets a 0
-    heman:stat_set(<<"cerlan_data">>, <<"unimportant_no_projects">>, 1),
     0;
-gauge_importance(_User, _Projects, []) ->
+gauge_importance(User, _Projects, []) ->
     %% No commits gets 0
-    heman:stat_set(<<"cerlan_data">>, <<"unimportant_no_commits">>, 1),
     0;
 gauge_importance(User, _Projects, _Commits) when User#user.longest_streak == 0 ->
     %% No streak (has projects but no commits) gets a 0
-    heman:stat_set(<<"cerlan_data">>, <<"unimportant_no_streak">>, 1),
     0;
 gauge_importance(User, Projects, [{Last, _} | _] = Commits) ->
     Avg = lists:foldl(fun({_, X}, Y) -> length(X) + Y end, 0, Commits) / length(Commits),
@@ -92,7 +86,6 @@ gauge_importance(User, Projects, [{Last, _} | _] = Commits) ->
     end.
 
 fetch_projects(User) ->
-    heman:stat_set(<<"cerlan_data">>, <<"fetch_projects">>, 1),
     case (catch githubby:user_repos({?LOGIN, ?TOKEN}, User#user.username)) of
         {struct, [{<<"repositories">>, Repos}]} ->
             lists:foldl(fun(Project, Projects) ->
@@ -100,53 +93,46 @@ fetch_projects(User) ->
                 Branches = case (catch githubby:repos_refs({?LOGIN, ?TOKEN}, User#user.username, binary_to_list(Project))) of
                     {struct,[{<<"branches">>, {struct, X}}]} -> [Y || {Y, _} <- X];
                     X ->
-                        io:format("unexpected response in fetch_projects/1 (fetch repos refs) ~p~n", [X]),
-                        heman:stat_set(<<"cerlan_data">>, <<"fail_repos_refs">>, 1),
                         [<<"master">>]
                 end,
-                heman:stat_set(<<"cerlan_data">>, <<"known_branches">>, length(Branches)),
                 [{Project, Branches} | Projects]
             end, [], [proplists:get_value(<<"name">>, Values) || {struct, Values} <- Repos]);
         X ->
-            io:format("unexpected response in fetch_projects/1 ~p~n", [X]),
-            heman:stat_set(<<"cerlan_data">>, <<"fail_user_repos">>, 1),
             []
     end.
 
 cache_projects(User, Projects) ->
     lists:foreach(
         fun({Project, Branches}) ->
-            heman:stat_set(<<"cerlan_data">>, <<"project_cache">>, 1),
-            (catch mnesia:transaction(fun() ->
-                mnesia:write(#project{
-                    id = {User#user.username, Project},
-                    username = User#user.username,
-                    project = Project,
-                    branches = Branches
-                })
-            end))
+            emongo:update(cerlan, "projects", [{"username", User#user.username}, {"project", Project}], [
+                {"username", User#user.username},
+                {"project", Project},
+                {"branches", {array, Branches}}
+            ], true)
         end,
         Projects
     ).
 
 collect_commits(User, Projects) ->
     ExpandedProjects = lists:foldl(fun({Project, Branches}, Acc) ->
-        Acc ++ [{binary_to_list(Project), binary_to_list(Branch)} || Branch <- Branches]
+        Acc ++ [{Project, Branch} || Branch <- Branches]
     end, [], Projects),
     collect_commits(User, ExpandedProjects, dict:new()).
 
 collect_commits(_, [], Dict) -> lists:reverse(lists:keysort(1, dict:to_list(Dict)));
 collect_commits(User, [{Project, Branch} | Projects], Dict) ->
     timer:sleep(1000),
-    Commits = case (catch githubby:user_repos_commits({?LOGIN, ?TOKEN}, User#user.username, Project, Branch)) of
+    Commits = try githubby:user_repos_commits({?LOGIN, ?TOKEN}, User#user.username, Project, Branch) of
         {struct, [{<<"commits">>, {struct, []}}]} -> [];
-        {struct, [{<<"commits">>, CommitList}]} -> CommitList;
-        _ -> []
+        {struct,[{<<"error">>, [{struct,[{<<"error">>,<<"api route not recognized">>}]}]}]} -> [];
+        {struct, [{<<"commits">>, CommitList}]} -> CommitList
+        catch
+        X:Y -> []
     end,
     NewDict = lists:foldl(
         fun(CommitDate, TmpDict) ->
             [DateString|_] = string:tokens(CommitDate, "T"),
-            Date = list_to_tuple([list_to_integer(X) || X <- string:tokens(DateString, "-")]),
+            Date = erlang:list_to_tuple([list_to_integer(X) || X <- string:tokens(DateString, "-")]),
             case dict:is_key(Date, TmpDict) of
                 true ->
                     dict:update(Date, fun(Old) -> [Project | Old] end, [Project], TmpDict);
@@ -202,19 +188,24 @@ calc_current_streak(Acc, _, _) ->
 %% % -
 
 update_user(User) ->
-    mnesia:transaction(fun() -> mnesia:write(User) end).
+    emongo:update(cerlan, "users", [{"username", User#user.username}], [
+        {"id", User#user.id},
+        {"username", User#user.username},
+        {"longest_streak", User#user.longest_streak},
+        {"current_streak", User#user.current_streak},
+        {"last_updated", User#user.last_updated},
+        {"importance", User#user.importance}
+    ]).
 
 update_user_days(User, Days) ->
     lists:foreach(
         fun({Day, Projects}) ->
-            (catch mnesia:transaction(fun() ->
-                mnesia:write(#day{
-                    id = {User#user.username, Day},
-                    username = User#user.username,
-                    date = Day,
-                    projects = lists:usort(Projects)
-                })
-            end))
+             DayEpoch = calendar:datetime_to_gregorian_seconds({Day, {0, 0, 0}}),
+             emongo:update(cerlan, "days", [{"username", User#user.username}, {"day", DayEpoch}], [
+                 {"username", User#user.username},
+                 {"day", DayEpoch},
+                 {"projects", {array, lists:usort(Projects)}}
+             ], true)
         end,
         Days
     ).
@@ -223,62 +214,79 @@ create_user(Username) ->
     case (catch githubby:user_info({?LOGIN, ?TOKEN}, Username)) of
         {struct, [{<<"user">>, {struct, UserData}}]} ->
             create_user(Username, proplists:get_value(<<"id">>, UserData)),
-            cerlan_data:refresh_user(Username),
             ok;
         _ -> nop
     end.
 
+create_user(Username, UserID) when is_list(Username) ->
+    create_user(list_to_binary(Username), UserID);
 create_user(Username, UserID) ->
-    (catch mnesia:transaction(fun() ->
-        mnesia:write(#user{
-            id = UserID,
-            username = Username,
-            longest_streak = 0,
-            current_streak = 0
-        })
-    end)).
+    emongo:insert(cerlan, "users", [
+        {"id", UserID},
+        {"username", Username},
+        {"longest_streak", 0},
+        {"current_streak", 0},
+        {"last_updated", 0}
+    ]).
 
 all_users() ->
-    mnesia:activity(transaction, fun() -> qlc:e( qlc:q([R || R <- mnesia:table(user) ]) ) end).
+    [begin
+        #user{
+            id = proplists:get_value(<<"id">>, User),
+            username = proplists:get_value(<<"username">>, User),
+            longest_streak = proplists:get_value(<<"longest_streak">>, User, 0),
+            current_streak = proplists:get_value(<<"current_streak">>, User, 0),
+            last_updated = proplists:get_value(<<"last_updated">>, User, 0),
+            importance = proplists:get_value(<<"importance">>, User, 0)
+        }
+    end || User <- emongo:find_all(cerlan, "users", [], [])].
 
+user_data(Username) when is_list(Username) ->
+    user_data(list_to_binary(Username));
 user_data(Username) ->
-    user_data(Username, date()).
+    transform_user(emongo:find_all(cerlan, "users", [{"username", Username}], [])).
 
-user_data(Username, _Date) ->
-    mnesia:activity(transaction, fun() ->
-        Q = qlc:q([R || R <- mnesia:table(user), R#user.username == Username]),
-        qlc:e(Q)
-    end).
+transform_user(Users) ->
+    [begin
+        #user{
+            id = proplists:get_value(<<"id">>, User),
+            username = proplists:get_value(<<"username">>, User),
+            longest_streak = proplists:get_value(<<"longest_streak">>, User, 0),
+            current_streak = proplists:get_value(<<"current_streak">>, User, 0),
+            last_updated = proplists:get_value(<<"last_updated">>, User, 0),
+            importance = proplists:get_value(<<"importance">>, User, 0)
+        }
+    end || User <- Users].
 
-user_dates(User) ->
-    mnesia:activity(transaction, fun() ->
-        Q = qlc:q([R || R <- mnesia:table(day), R#day.username == User#user.username]),
-        qlc:e(Q)
-    end).
+user_dates(User) when is_record(User, user) ->
+    user_dates(User#user.username);
+user_dates(Username) when is_list(Username) ->
+    user_dates(list_to_binary(Username));
+user_dates(Username) ->
+    [ begin
+        {array, Projects} = proplists:get_value(<<"projects">>, Day),
+        {TS, _} = calendar:gregorian_seconds_to_datetime(proplists:get_value(<<"day">>, Day)),
+        #day{
+            username = proplists:get_value(<<"username">>, Day),
+            date = TS,
+            projects = Projects
+        }
+    end || Day <- emongo:find(cerlan, "days", [{"username", Username}], [])].
 
 current_streak_users() ->
-    Users = mnesia:activity(transaction, fun() ->
-        Q = qlc:q([R || R <- mnesia:table(user)]),
-        qlc:e(Q)
-    end),
+    Users = transform_user(emongo:find(cerlan, "users", [], [{orderby, [{"current_streak", desc}]}, {limit, 25}])),
     SortedUsers = lists:sort(fun(A, B) -> A#user.current_streak > B#user.current_streak end, Users),
     {Top, _} = lists:split(10, SortedUsers),
     Top.
 
 longest_streak_users() ->
-    Users = mnesia:activity(transaction, fun() ->
-        Q = qlc:q([R || R <- mnesia:table(user)]),
-        qlc:e(Q)
-    end),
+    Users = transform_user(emongo:find(cerlan, "users", [], [{orderby, [{"longest_streak", desc}]}, {limit, 25}])),
     SortedUsers = lists:sort(fun(A, B) -> A#user.longest_streak > B#user.longest_streak end, Users),
     {Top, _} = lists:split(10, SortedUsers),
     Top.
 
 important_users() ->
-    Users = mnesia:activity(transaction, fun() ->
-        Q = qlc:q([R || R <- mnesia:table(user)]),
-        qlc:e(Q)
-    end),
+    Users = transform_user(emongo:find(cerlan, "users", [], [{orderby, [{"importance", desc}]}, {limit, 25}])),
     SortedUsers = lists:sort(fun(A, B) -> A#user.importance > B#user.importance end, Users),
     {Top, _} = lists:split(10, SortedUsers),
     Top.

@@ -8,11 +8,9 @@
         cerlan_thome
     ]},
     {registered, []},
-    {applications, [kernel, stdlib, sasl, inets, crypto, mnesia]},
+    {applications, [kernel, stdlib, sasl]},
     {mod, {cerlan, []}},
     {start_phases, [
-      {world, []},
-      {pg2, []},
-      {mnesia, []}
+      {emongo, []}
     ]}
 ]}.

@@ -1,7 +1,5 @@
 -module(cerlan_dispatch).
-
 -include("cerlan.hrl").
-
 -export([dispatch/1]).
 
 dispatch(Req) ->
@@ -36,7 +34,6 @@ handle_request("/faq", Req) ->
     Req:respond({200, [{<<"content-type">>, <<"text/html">>}], Body});
 
 handle_request("/update/\~" ++ Username, Req) ->
-    heman:stat_set(<<"cerlan_web">>, <<"update_call">>, 1),
     Parent = self(),
     spawn(fun() ->
         cerlan_data:force_refresh_user(Username),
@@ -46,7 +43,6 @@ handle_request("/update/\~" ++ Username, Req) ->
     Req:respond({302, [{<<"Location">>, list_to_binary("/\~" ++ Username)}], <<"ok">>});
 
 handle_request("/all", Req) ->
-    heman:stat_set(<<"cerlan_web">>, <<"all_call">>, 1),
     Users = lists:sort(fun(A, B) ->
         case A#user.last_updated == B#user.last_updated of
             true ->
@@ -60,9 +56,10 @@ handle_request("/all", Req) ->
                 A#user.last_updated > B#user.last_updated
         end
     end, cerlan_data:all_users()),
-    Body = erlang:iolist_to_binary(cerlan_thome:all(
-        [{X#user.username, X#user.longest_streak, X#user.last_updated, erlang:round(X#user.importance)} || X <- Users, X#user.last_updated =/= undefined]
-    )),
+    Body = erlang:iolist_to_binary(cerlan_thome:all([begin
+        {TS, _} = calendar:gregorian_seconds_to_datetime(X#user.last_updated),
+        {X#user.username, X#user.longest_streak, TS, erlang:round(X#user.importance)}
+    end || X <- Users, X#user.importance =/= 0])),
     Req:respond({200, [{<<"content-type">>, <<"text/html">>}], Body});
 
 handle_request("/json/\~" ++ RawUsername, Req) ->
@@ -74,19 +71,17 @@ handle_request("/json/\~" ++ RawUsername, Req) ->
     end,
     Body = case cerlan_data:user_data(Username) of
         [] ->
-            heman:stat_set(<<"cerlan_web">>, <<"json_no_user">>, 1),
             erlang:iolist_to_binary(mochijson2:encode({struct, [{<<"error">>, <<"No such user.">>}]}));
         [User] ->
-            heman:stat_set(<<"cerlan_web">>, <<"json_user_call">>, 1),
             UserData = [X || X = {_, _, _, {Y1, M1, _}, _} <- cerlan_data:user_dates(User), Y1 == Y, M1 == M],
             ActiveProjecst = build_active_projects(UserData),
             UnfilteredUserData = filtered_user_dates(Projects, UserData),
             Data = lists:reverse(gen_cal(Y, M, UnfilteredUserData)),
             UnencodedJSON = {struct, [
-                {<<"user">>, list_to_binary(Username)},
+                {<<"user">>, User#user.username},
                 {<<"current_streak">>, User#user.current_streak},
                 {<<"longest_streak">>, User#user.longest_streak},
-                {<<"projects">>, [list_to_binary(X) || X <- ActiveProjecst]},
+                {<<"projects">>, ActiveProjecst},
                 {<<"days">>, [Day || {Day, ok} <- lists:flatten(Data)]}
             ]},
             erlang:iolist_to_binary(mochijson2:encode(UnencodedJSON))
@@ -102,14 +97,8 @@ handle_request("/\~" ++ RawUsername, Req) ->
     end,
     Body = case cerlan_data:user_data(Username) of
         [] ->
-            heman:stat_set(<<"cerlan_web">>, <<"no_user_call">>, 1),
             spawn(fun() ->
-                case cerlan_data:create_user(Username) of
-                    ok -> ok;
-                    _ ->
-                        heman:stat_set(<<"cerlan_web">>, <<"no_github_user">>, 1),
-                        ok
-                end
+                cerlan_data:create_user(Username)
             end),
             erlang:iolist_to_binary(cerlan_tuser:index(
                 {Username, Username},
@@ -125,7 +114,6 @@ handle_request("/\~" ++ RawUsername, Req) ->
                 [{warning, "We don't know about that user but they have been added to our processing list."}]
             ));
         [User] ->
-            heman:stat_set(<<"cerlan_web">>, <<"user_call">>, 1),
             UserData = [X || X = {_, _, _, {Y1, M1, _}, _} <- cerlan_data:user_dates(User), Y1 == Y, M1 == M],
             ActiveProjecst = build_active_projects(UserData),
             UnfilteredUserData = filtered_user_dates(Projects, UserData),
@@ -147,7 +135,6 @@ handle_request("/\~" ++ RawUsername, Req) ->
     Req:respond({200, [{<<"content-type">>, <<"text/html">>}], Body});
 
 handle_request(_Other, Req) ->
-    heman:stat_set(<<"cerlan_web">>, <<"fourofour">>, 1),
     Req:respond({200, [{<<"content-type">>, <<"text/html">>}], <<"<h1>Not found.</h1>">>}).
 
 gen_cal(Y, M, Dates) ->

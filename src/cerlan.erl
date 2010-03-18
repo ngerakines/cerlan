@@ -5,73 +5,16 @@
 
 start() ->
     inets:start(),
-    mnesia:start(),
     crypto:start(),
     net_adm:world(),
-    application:start(heman),
-    heman:rule_set({<<"cerlan_data">>, <<"bad_project_fetch">>}, increase),
-    heman:rule_set({<<"cerlan_data">>, <<"fetch_projects">>}, increase),
-    heman:rule_set({<<"cerlan_data">>, <<"known_commits">>}, increase),
-    heman:rule_set({<<"cerlan_data">>, <<"known_projects">>}, increase),
-    heman:rule_set({<<"cerlan_data">>, <<"process_loop">>}, increase),
-    heman:rule_set({<<"cerlan_data">>, <<"project_cache">>}, increase),
-    heman:rule_set({<<"cerlan_data">>, <<"unimportant_no_commits">>}, increase),
-    heman:rule_set({<<"cerlan_data">>, <<"unimportant_no_projects">>}, increase),
-    heman:rule_set({<<"cerlan_data">>, <<"users_processed">>}, increase),
-    heman:rule_set({<<"cerlan_web">>, <<"all">>}, increase),
-    heman:rule_set({<<"cerlan_web">>, <<"fourofour">>}, increase),
-    heman:rule_set({<<"cerlan_web">>, <<"json_user_call">>}, increase),
-    heman:rule_set({<<"cerlan_web">>, <<"no_github_user">>}, increase),
-    heman:rule_set({<<"cerlan_web">>, <<"no_user_call">>}, increase),
-    heman:rule_set({<<"cerlan_web">>, <<"user_call">>}, increase),
-    heman:health_set(<<"cerlan_data">>, 1, <<"fetch_projects">>, [
-        {{hours, 6, sum}, {under, 10}, {decrease, 30}},
-        {{hours, 6, sum}, {under, 20}, {decrease, 10}},
-        {{hours, 6, sum}, {range, 20, 35}, {increase, 5}},
-        {{hours, 6, sum}, {range, 35, 40}, {increase, 10}},
-        {{hours, 6, sum}, {over, 40}, {increase, 20}}
-    ]),
-    heman:health_set(<<"cerlan_data">>, 2, <<"process_loop">>, [
-        {{hours, 12, sum}, {under, 1}, {decrease, 30}},
-        {{hours, 12, sum}, {range, 1, 4}, {increase, 10}},
-        {{hours, 12, sum}, {over, 3}, {increase, 20}}
-    ]),
-    heman:health_set(<<"cerlan_data">>, 3, <<"users_processed">>, [
-        {{hours, 24, sum}, {under, 1000}, {decrease, 30}},
-        {{hours, 24, sum}, {range, 1000, 1500}, {increase, 10}},
-        {{hours, 24, sum}, {over, 1500}, {increase, 20}}
-    ]),
+    application:start(emongo),
     application:start(cerlan).
 
 start(_Type, _Args) ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
-start_phase(mnesia, _, _) ->
-    mnesia:change_table_copy_type(schema, node(), disc_copies),
-    mnesia:create_schema([node()]),
-    case mnesia:system_info(tables) of
-        [schema] ->
-            mnesia:create_table(user, [{disc_copies, [node()]}, {record_name, user}, {attributes, record_info(fields, user)}]),
-            mnesia:create_table(current_streaks, [{disc_copies, [node()]}, {attributes, record_info(fields, user)}]),
-            mnesia:create_table(longest_streaks, [{disc_copies, [node()]}, {attributes, record_info(fields, user)}]),
-            mnesia:create_table(day, [{disc_copies, [node()]}, {record_name, day}, {attributes, record_info(fields, day)}]),
-            mnesia:create_table(project, [{disc_copies, [node()]}, {record_name, project}, {attributes, record_info(fields, project)}]),
-            mnesia:add_table_index(user, username),
-            mnesia:add_table_index(user, username),
-            mnesia:add_table_index(day, date),
-            ok;
-        _ ->
-            ok
-    end,
-    mnesia:wait_for_tables([user, day], 5000),
-    ok;
-
-start_phase(world, _, _) ->
-    net_adm:world(),
-    ok;
-
-start_phase(pg2, _, _) ->
-    pg2:which_groups(),
+start_phase(emongo, _, _) ->
+    emongo:add_pool(cerlan, "localhost", 27017, "cerlan", 1),
     ok.
 
 stop(_State) ->
